@@ -45,6 +45,42 @@ npm start
 
 服务通过 stdin/stdout 使用按行分隔的 JSON-RPC。日志和诊断信息写入 stderr。
 
+## MCP 客户端示例
+
+Claude Code：
+
+```sh
+claude mcp add redmine \
+  --transport stdio \
+  --env REDMINE_BASE_URL=https://redmine.example.com \
+  --env REDMINE_API_KEY=your-api-key \
+  --env REDMINE_MCP_READ_ONLY=true \
+  -- redmine-mcp-server
+```
+
+Codex CLI：
+
+```sh
+codex mcp add \
+  --env REDMINE_BASE_URL=https://redmine.example.com \
+  --env REDMINE_API_KEY=your-api-key \
+  --env REDMINE_MCP_READ_ONLY=true \
+  redmine -- redmine-mcp-server
+```
+
+Codex `config.toml`：
+
+```toml
+[mcp_servers.redmine]
+command = "redmine-mcp-server"
+args = []
+
+[mcp_servers.redmine.env]
+REDMINE_BASE_URL = "https://redmine.example.com"
+REDMINE_API_KEY = "your-api-key"
+REDMINE_MCP_READ_ONLY = "true"
+```
+
 ## 配置
 
 | 变量 | 必填 | 默认值 | 说明 |
@@ -55,7 +91,7 @@ npm start
 | `REDMINE_MCP_ENABLE_DELETES` | 否 | `false` | 暴露破坏性删除/移除工具。 |
 | `REDMINE_TIMEOUT_MS` | 否 | `30000` | HTTP 请求超时时间，单位毫秒。 |
 
-更多功能开关和客户端示例见
+更多功能开关和完整客户端示例见
 [docs/client-configuration.md](docs/client-configuration.md)。
 
 ## 开发

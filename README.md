@@ -46,6 +46,42 @@ npm start
 The server communicates over newline-delimited JSON-RPC on stdin/stdout. Logs
 and diagnostics are written to stderr.
 
+## MCP Client Examples
+
+Claude Code:
+
+```sh
+claude mcp add redmine \
+  --transport stdio \
+  --env REDMINE_BASE_URL=https://redmine.example.com \
+  --env REDMINE_API_KEY=your-api-key \
+  --env REDMINE_MCP_READ_ONLY=true \
+  -- redmine-mcp-server
+```
+
+Codex CLI:
+
+```sh
+codex mcp add \
+  --env REDMINE_BASE_URL=https://redmine.example.com \
+  --env REDMINE_API_KEY=your-api-key \
+  --env REDMINE_MCP_READ_ONLY=true \
+  redmine -- redmine-mcp-server
+```
+
+Codex `config.toml`:
+
+```toml
+[mcp_servers.redmine]
+command = "redmine-mcp-server"
+args = []
+
+[mcp_servers.redmine.env]
+REDMINE_BASE_URL = "https://redmine.example.com"
+REDMINE_API_KEY = "your-api-key"
+REDMINE_MCP_READ_ONLY = "true"
+```
+
 ## Configuration
 
 | Variable | Required | Default | Description |
@@ -56,7 +92,7 @@ and diagnostics are written to stderr.
 | `REDMINE_MCP_ENABLE_DELETES` | No | `false` | Expose destructive delete/remove tools. |
 | `REDMINE_TIMEOUT_MS` | No | `30000` | HTTP request timeout in milliseconds. |
 
-Additional feature flags and client examples are documented in
+Additional feature flags and complete client examples are documented in
 [docs/client-configuration.md](docs/client-configuration.md).
 
 ## Development

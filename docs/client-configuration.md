@@ -106,7 +106,8 @@ Homebrew-installed standalone server, override the context server command:
 Claude Code can register a local stdio MCP server with `claude mcp add`:
 
 ```sh
-claude mcp add --transport stdio redmine \
+claude mcp add redmine \
+  --transport stdio \
   --env REDMINE_BASE_URL=https://redmine.example.com \
   --env REDMINE_API_KEY=your-api-key \
   --env REDMINE_MCP_READ_ONLY=true \
@@ -157,8 +158,18 @@ Restart Claude Desktop after changing the configuration.
 
 ## Codex
 
-Codex clients that support local stdio MCP servers can use a TOML server entry
-in the user or project Codex configuration:
+Codex CLI can register the server with `codex mcp add`:
+
+```sh
+codex mcp add \
+  --env REDMINE_BASE_URL=https://redmine.example.com \
+  --env REDMINE_API_KEY=your-api-key \
+  --env REDMINE_MCP_READ_ONLY=true \
+  redmine -- redmine-mcp-server
+```
+
+Codex clients that support local stdio MCP servers can also use a TOML server
+entry in the user or project Codex configuration:
 
 ```toml
 [mcp_servers.redmine]
