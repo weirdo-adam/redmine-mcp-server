@@ -1,0 +1,133 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Resolve release metadata
+        id: metadata
+        run: |
+          set -eu
+
+          version=$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")
+          if [ -z "$version" ]; then
+            echo "Unable to read version from package.json" >&2
+            exit 1
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "archive=dist/redmine-mcp-server-$version.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "checksum=dist/redmine-mcp-server-$version.tar.gz.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Inspect existing release
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.metadata.outputs.tag }}
+        run: |
+          set -eu
+
+          tag_exists=false
+          release_exists=false
+          release_is_draft=false
+          skip=false
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            tag_exists=true
+          fi
+
+          if draft=$(gh release view "$TAG" --json isDraft --jq '.isDraft' 2>/dev/null); then
+            release_exists=true
+            if [ "$draft" = "true" ]; then
+              release_is_draft=true
+            fi
+          fi
+
+          if [ "$tag_exists" = "true" ] && [ "$release_exists" = "true" ] && [ "$release_is_draft" != "true" ]; then
+            skip=true
+            echo "$TAG already has a remote tag and GitHub Release; skipping publish."
+          fi
+
+          echo "tag_exists=$tag_exists" >> "$GITHUB_OUTPUT"
+          echo "release_exists=$release_exists" >> "$GITHUB_OUTPUT"
+          echo "release_is_draft=$release_is_draft" >> "$GITHUB_OUTPUT"
+          echo "skip=$skip" >> "$GITHUB_OUTPUT"
+
+      - name: Build release package
+        if: steps.existing.outputs.skip != 'true'
+        run: npm run package:release
+
+      - name: Create release tag
+        if: steps.existing.outputs.skip != 'true' && steps.existing.outputs.tag_exists != 'true'
+        env:
+          TAG: ${{ steps.metadata.outputs.tag }}
+        run: |
+          set -eu
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+
+      - name: Create GitHub Release
+        if: steps.existing.outputs.skip != 'true' && steps.existing.outputs.release_exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.metadata.outputs.tag }}
+          ARCHIVE: ${{ steps.metadata.outputs.archive }}
+          CHECKSUM: ${{ steps.metadata.outputs.checksum }}
+        run: |
+          set -eu
+
+          gh release create "$TAG" "$ARCHIVE" "$CHECKSUM" \
+            --title "$TAG" \
+            --generate-notes \
+            --verify-tag
+
+      - name: Update existing GitHub Release assets
+        if: steps.existing.outputs.skip != 'true' && steps.existing.outputs.release_exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.metadata.outputs.tag }}
+          ARCHIVE: ${{ steps.metadata.outputs.archive }}
+          CHECKSUM: ${{ steps.metadata.outputs.checksum }}
+        run: |
+          set -eu
+
+          gh release upload "$TAG" "$ARCHIVE" "$CHECKSUM" --clobber
+
+      - name: Publish draft GitHub Release
+        if: steps.existing.outputs.skip != 'true' && steps.existing.outputs.release_exists == 'true' && steps.existing.outputs.release_is_draft == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.metadata.outputs.tag }}
+        run: |
+          set -eu
+
+          gh release edit "$TAG" --draft=false --latest --verify-tag
