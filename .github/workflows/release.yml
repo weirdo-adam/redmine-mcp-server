@@ -40,10 +40,14 @@ jobs:
             exit 1
           fi
 
+          archive_name="redmine-mcp-server-$version.tar.gz"
+
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
-          echo "archive=dist/redmine-mcp-server-$version.tar.gz" >> "$GITHUB_OUTPUT"
-          echo "checksum=dist/redmine-mcp-server-$version.tar.gz.sha256" >> "$GITHUB_OUTPUT"
+          echo "archive=dist/$archive_name" >> "$GITHUB_OUTPUT"
+          echo "checksum=dist/$archive_name.sha256" >> "$GITHUB_OUTPUT"
+          echo "source_url=https://github.com/${GITHUB_REPOSITORY}/releases/download/v$version/$archive_name" >> "$GITHUB_OUTPUT"
+          echo "homebrew_release_tag=redmine-mcp-server-$version" >> "$GITHUB_OUTPUT"
 
       - name: Inspect existing release
         id: existing
@@ -79,9 +83,31 @@ jobs:
           echo "release_is_draft=$release_is_draft" >> "$GITHUB_OUTPUT"
           echo "skip=$skip" >> "$GITHUB_OUTPUT"
 
+      - name: Validate Homebrew tap token
+        if: steps.existing.outputs.skip != 'true'
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -eu
+
+          if [ -z "${HOMEBREW_TAP_TOKEN:-}" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN is required to update weirdo-adam/homebrew-tap after a release."
+            exit 1
+          fi
+
       - name: Build release package
         if: steps.existing.outputs.skip != 'true'
         run: npm run package:release
+
+      - name: Resolve source checksum
+        id: checksum
+        if: steps.existing.outputs.skip != 'true'
+        env:
+          CHECKSUM: ${{ steps.metadata.outputs.checksum }}
+        run: |
+          set -eu
+
+          echo "source_sha256=$(awk '{print $1}' "$CHECKSUM")" >> "$GITHUB_OUTPUT"
 
       - name: Create release tag
         if: steps.existing.outputs.skip != 'true' && steps.existing.outputs.tag_exists != 'true'
@@ -131,3 +157,23 @@ jobs:
           set -eu
 
           gh release edit "$TAG" --draft=false --latest --verify-tag
+
+      - name: Dispatch Homebrew bottle workflow
+        if: steps.existing.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAP_REPOSITORY: weirdo-adam/homebrew-tap
+          FORMULA: redmine-mcp-server
+          RELEASE_TAG: ${{ steps.metadata.outputs.homebrew_release_tag }}
+          SOURCE_URL: ${{ steps.metadata.outputs.source_url }}
+          SOURCE_SHA256: ${{ steps.checksum.outputs.source_sha256 }}
+        run: |
+          set -eu
+
+          gh workflow run Bottle \
+            --repo "$TAP_REPOSITORY" \
+            --ref main \
+            -f formula="$FORMULA" \
+            -f release_tag="$RELEASE_TAG" \
+            -f source_url="$SOURCE_URL" \
+            -f source_sha256="$SOURCE_SHA256"

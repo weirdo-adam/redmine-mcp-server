@@ -27,6 +27,17 @@ npm test
 The MCP server speaks newline-delimited JSON-RPC over stdio. Keep stdout reserved
 for protocol messages; write diagnostics to stderr.
 
+## Release
+
+Update `package.json` and merge to `main`. The release workflow creates the
+version tag, publishes the source archive, and dispatches the Homebrew tap
+`Bottle` workflow.
+
+Configure the `HOMEBREW_TAP_TOKEN` repository secret before publishing a new
+version. The token must be able to dispatch workflows in
+`weirdo-adam/homebrew-tap`; fine-grained tokens also need contents write access
+for that repository.
+
 ## Pull Requests
 
 - Keep pull requests scoped to one behavior, tool group, or documentation change.
