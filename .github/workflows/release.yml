@@ -24,19 +24,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+      - name: Setup Rust
+        run: rustup toolchain install stable --profile minimal
 
       - name: Resolve release metadata
         id: metadata
         run: |
           set -eu
 
-          version=$(node -p "JSON.parse(require('fs').readFileSync('package.json', 'utf8')).version")
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
           if [ -z "$version" ]; then
-            echo "Unable to read version from package.json" >&2
+            echo "Unable to read version from Cargo.toml" >&2
             exit 1
           fi
 
@@ -97,7 +95,7 @@ jobs:
 
       - name: Build release package
         if: steps.existing.outputs.skip != 'true'
-        run: npm run package:release
+        run: scripts/package-release.sh
 
       - name: Resolve source checksum
         id: checksum

@@ -5,7 +5,7 @@ changes.
 
 ## Development Setup
 
-Install Node.js 18.17 or newer.
+Install Rust 1.75 or newer.
 
 Clone the repository and run checks from the repository root.
 
@@ -20,8 +20,8 @@ scripts/check.sh
 Individual commands:
 
 ```sh
-npm run lint:js
-npm test
+cargo fmt --check
+cargo test
 ```
 
 The MCP server speaks newline-delimited JSON-RPC over stdio. Keep stdout reserved
@@ -29,7 +29,7 @@ for protocol messages; write diagnostics to stderr.
 
 ## Release
 
-Update `package.json` and merge to `main`. The release workflow creates the
+Update `Cargo.toml` and merge to `main`. The release workflow creates the
 version tag, publishes the source archive, and dispatches the Homebrew tap
 `Bottle` workflow.
 

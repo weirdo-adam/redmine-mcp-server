@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 set -eu
 
-npm run lint:js
-npm test
+cargo fmt --check
+cargo test

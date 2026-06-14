@@ -38,7 +38,7 @@ From the repository root:
 export REDMINE_BASE_URL="https://redmine.example.com"
 export REDMINE_API_KEY="your-api-key"
 export REDMINE_MCP_READ_ONLY=true
-npm start
+cargo run
 ```
 
 Smoke test:
@@ -49,7 +49,7 @@ export REDMINE_API_KEY="your-api-key"
 printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-  | npm start
+  | cargo run --quiet
 ```
 
 ## One-Command Local Install

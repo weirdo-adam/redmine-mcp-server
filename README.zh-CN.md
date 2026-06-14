@@ -7,7 +7,7 @@
 
 ## 运行要求
 
-- Node.js 18.17 或更高版本
+- Rust 1.75 或更高版本，仅源码构建需要
 - Redmine 已开启 REST API
 - Redmine API key 具备目标项目所需权限
 - 仅在使用检查清单工具时需要 Redmine Checklists 插件
@@ -40,7 +40,7 @@ redmine-mcp-server
 ```sh
 export REDMINE_BASE_URL="https://redmine.example.com"
 export REDMINE_API_KEY="your-api-key"
-npm start
+cargo run
 ```
 
 服务通过 stdin/stdout 使用按行分隔的 JSON-RPC。日志和诊断信息写入 stderr。
