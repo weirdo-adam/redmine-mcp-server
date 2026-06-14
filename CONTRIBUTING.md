@@ -30,7 +30,7 @@ for protocol messages; write diagnostics to stderr.
 ## Release
 
 Update `Cargo.toml` and merge to `main`. The release workflow creates the
-version tag, publishes the release archive, and dispatches the Homebrew tap
+version tag, publishes the source release archive, and dispatches the Homebrew tap
 `Bottle` workflow.
 
 Configure the `HOMEBREW_TAP_TOKEN` repository secret before publishing a new
