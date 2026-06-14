@@ -8,8 +8,8 @@ that channel. Otherwise, open a minimal GitHub issue asking for a maintainer
 contact path, without sharing secrets, exploit details, private Redmine data, or
 internal URLs.
 
-Useful reports include the affected extension version, Zed version, Redmine
-version, relevant configuration flags, and a minimal sanitized reproduction.
+Useful reports include the affected server version, Redmine version, relevant
+configuration flags, and a minimal sanitized reproduction.
 
 ## Credentials and Redmine Data
 

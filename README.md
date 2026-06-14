@@ -92,7 +92,7 @@ REDMINE_MCP_READ_ONLY = "true"
 | `REDMINE_MCP_ENABLE_DELETES` | No | `false` | Expose destructive delete/remove tools. |
 | `REDMINE_TIMEOUT_MS` | No | `30000` | HTTP request timeout in milliseconds. |
 
-Additional feature flags and complete client examples are documented in
+Complete environment variables and client examples are documented in
 [docs/client-configuration.md](docs/client-configuration.md).
 
 ## Development

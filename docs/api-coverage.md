@@ -1,14 +1,13 @@
 # Redmine REST API Coverage
 
-This extension covers common Redmine workflows for Zed agents. It is not a
+This server exposes common Redmine workflows through MCP tools. It is not a
 complete Redmine REST API implementation.
 
 Status definitions:
 
 - Supported: core Redmine REST endpoints for this area are exposed.
 - Partial: only selected endpoints or safe read-only operations are exposed.
-- Planned: useful for this MCP server, but not implemented yet.
-- Not supported: not currently targeted for this extension.
+- Not supported: outside the current server scope.
 
 ## Coverage Status
 
@@ -46,17 +45,15 @@ versions, relations, watchers, attachments, project membership lookup, wiki page
 lookup, and checklists. Optional tool groups are enabled by default and can be
 disabled with `REDMINE_MCP_DISABLE_*` environment variables.
 
-Administrative APIs are intentionally not part of the first publish scope.
-Destructive delete/remove tools are implemented but disabled by default as the
-minimum safety mode. New write tools must be compatible with
+Administrative APIs are outside the default scope. Destructive delete/remove
+tools are implemented but disabled by default. New write tools must honor
 `REDMINE_MCP_READ_ONLY` and must have tests proving that read-only mode blocks
 the operation before any Redmine request is made.
 
-## Recommended Next Additions
+## Expansion Policy
 
-The first publish scope has no remaining planned Redmine REST API additions.
-Future expansion should be evaluated against tool count, write risk, and common
-agent workflows before adding new default tools.
+Future tool additions should be evaluated against tool count, write risk, and
+common MCP client workflows before they are enabled by default.
 
 ## References
 

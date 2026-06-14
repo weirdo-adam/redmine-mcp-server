@@ -1,9 +1,9 @@
 # Redmine MCP Server
 
-独立的 Redmine stdio Model Context Protocol server。
+面向 Redmine 的独立 stdio Model Context Protocol 服务器。
 
-它为 MCP 客户端提供 Redmine 问题、项目、元数据、Wiki、工时、附件、版本、
-关联、关注者和 Redmine Checklists 工具。
+提供 Redmine 问题、项目、元数据、Wiki、工时、附件、版本、关联、关注者和
+Redmine Checklists 工具。
 
 ## 运行要求
 
@@ -91,7 +91,7 @@ REDMINE_MCP_READ_ONLY = "true"
 | `REDMINE_MCP_ENABLE_DELETES` | 否 | `false` | 暴露破坏性删除/移除工具。 |
 | `REDMINE_TIMEOUT_MS` | 否 | `30000` | HTTP 请求超时时间，单位毫秒。 |
 
-更多功能开关和完整客户端示例见
+完整环境变量和客户端示例见
 [docs/client-configuration.md](docs/client-configuration.md)。
 
 ## 开发
