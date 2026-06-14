@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "node:fs";
 import readline from "node:readline";
 import { createConfig, createRedmineClient } from "./src/redmine.js";
 import { InputError, callTool, listTools, toolErrorPayload } from "./src/tools.js";
 
 const protocolVersion = "2024-11-05";
+const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+const serverVersion = packageJson.version;
 const client = createRedmineClient(createConfig());
 
 const rl = readline.createInterface({
@@ -53,7 +56,7 @@ async function handleMessage(message) {
         },
         serverInfo: {
           name: "redmine",
-          version: "0.1.0",
+          version: serverVersion,
         },
       };
 

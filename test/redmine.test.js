@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { buildUrl, createConfig, createRedmineClient } from "../server/src/redmine.js";
@@ -14,6 +15,7 @@ const DELETE_TOOL_NAMES = [
   "redmine_delete_version",
   "redmine_remove_watcher",
 ];
+const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 test("buildUrl trims base URL and serializes array query values", () => {
   assert.equal(
@@ -882,6 +884,7 @@ test("MCP stdio server answers initialize and tools/list with newline JSON-RPC",
   child.kill();
 
   assert.equal(responses[0].result.serverInfo.name, "redmine");
+  assert.equal(responses[0].result.serverInfo.version, packageJson.version);
   assert.ok(responses[1].result.tools.some((tool) => tool.name === "redmine_list_watchers"));
 });
 

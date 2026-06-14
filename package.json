@@ -1,6 +1,6 @@
 {
   "name": "redmine-mcp-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Standalone stdio MCP server for Redmine.",
   "type": "module",
   "license": "MIT",
