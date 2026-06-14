@@ -38,7 +38,7 @@ From the repository root:
 export REDMINE_BASE_URL="https://redmine.example.com"
 export REDMINE_API_KEY="your-api-key"
 export REDMINE_MCP_READ_ONLY=true
-npm start
+cargo run
 ```
 
 Smoke test:
@@ -49,8 +49,29 @@ export REDMINE_API_KEY="your-api-key"
 printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-  | npm start
+  | cargo run --quiet
 ```
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `REDMINE_BASE_URL` | Yes | none | Redmine base URL. Trailing slashes are ignored. |
+| `REDMINE_API_KEY` | Yes | none | Redmine REST API key. |
+| `REDMINE_MCP_READ_ONLY` | No | `false` | Hide and reject write tools. |
+| `REDMINE_MCP_ENABLE_DELETES` | No | `false` | Expose delete and remove tools. |
+| `REDMINE_SILENT_WRITES` | No | `false` | Suppress write response bodies by default and request `notify=false`. |
+| `REDMINE_TIMEOUT_MS` | No | `30000` | HTTP request timeout in milliseconds. |
+| `REDMINE_MCP_ATTACHMENT_MAX_BYTES` | No | `10485760` | Maximum attachment download size in bytes. |
+| `REDMINE_MCP_DISABLE_ATTACHMENTS` | No | `false` | Disable attachment tools. |
+| `REDMINE_MCP_DISABLE_CHECKLISTS` | No | `false` | Disable Redmine Checklists tools. |
+| `REDMINE_MCP_DISABLE_RELATIONS` | No | `false` | Disable issue relation tools. |
+| `REDMINE_MCP_DISABLE_TIME_ENTRIES` | No | `false` | Disable time entry tools. |
+| `REDMINE_MCP_DISABLE_VERSIONS` | No | `false` | Disable version tools. |
+| `REDMINE_MCP_DISABLE_WATCHERS` | No | `false` | Disable watcher tools. |
+| `REDMINE_MCP_DISABLE_WIKI` | No | `false` | Disable wiki tools. |
+
+Boolean variables accept `1`, `true`, `yes`, or `on` as true values.
 
 ## One-Command Local Install
 
@@ -80,8 +101,8 @@ After installation, external clients can use:
 
 ## Zed Custom Command
 
-The Zed extension can use its bundled server by default. To force Zed to use a
-Homebrew-installed standalone server, override the context server command:
+Zed extensions that support custom context server commands can point to this
+standalone server:
 
 ```json
 {
@@ -195,8 +216,7 @@ Use the same stdio contract:
 - Required environment: `REDMINE_BASE_URL`, `REDMINE_API_KEY`
 - Optional safety setting: `REDMINE_MCP_READ_ONLY=true`
 - Optional destructive delete/remove opt-in: `REDMINE_MCP_ENABLE_DELETES=true`
-- Optional feature flag example: `REDMINE_MCP_DISABLE_WIKI=true`
-- Optional attachment limit: `REDMINE_MCP_ATTACHMENT_MAX_BYTES=10485760`
+- Optional feature flags: `REDMINE_MCP_DISABLE_*`
 
 See [api-coverage.md](api-coverage.md) for the exposed Redmine API scope and
 feature flags.

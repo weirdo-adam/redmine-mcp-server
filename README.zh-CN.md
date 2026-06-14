@@ -1,13 +1,13 @@
 # Redmine MCP Server
 
-独立的 Redmine stdio Model Context Protocol server。
+面向 Redmine 的独立 stdio Model Context Protocol 服务器。
 
-它为 MCP 客户端提供 Redmine 问题、项目、元数据、Wiki、工时、附件、版本、
-关联、关注者和 Redmine Checklists 工具。
+提供 Redmine 问题、项目、元数据、Wiki、工时、附件、版本、关联、关注者和
+Redmine Checklists 工具。
 
 ## 运行要求
 
-- Node.js 18.17 或更高版本
+- Rust 1.75 或更高版本，仅源码构建需要
 - Redmine 已开启 REST API
 - Redmine API key 具备目标项目所需权限
 - 仅在使用检查清单工具时需要 Redmine Checklists 插件
@@ -40,7 +40,7 @@ redmine-mcp-server
 ```sh
 export REDMINE_BASE_URL="https://redmine.example.com"
 export REDMINE_API_KEY="your-api-key"
-npm start
+cargo run
 ```
 
 服务通过 stdin/stdout 使用按行分隔的 JSON-RPC。日志和诊断信息写入 stderr。
@@ -91,7 +91,7 @@ REDMINE_MCP_READ_ONLY = "true"
 | `REDMINE_MCP_ENABLE_DELETES` | 否 | `false` | 暴露破坏性删除/移除工具。 |
 | `REDMINE_TIMEOUT_MS` | 否 | `30000` | HTTP 请求超时时间，单位毫秒。 |
 
-更多功能开关和完整客户端示例见
+完整环境变量和客户端示例见
 [docs/client-configuration.md](docs/client-configuration.md)。
 
 ## 开发

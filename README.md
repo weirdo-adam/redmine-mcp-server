@@ -7,7 +7,7 @@ entries, attachments, versions, relations, watchers, and Redmine Checklists.
 
 ## Requirements
 
-- Node.js 18.17 or newer
+- Rust 1.75 or newer, only for source builds
 - Redmine REST API enabled
 - Redmine API key with the required project permissions
 - Redmine Checklists plugin, only when checklist tools are used
@@ -40,7 +40,7 @@ Development checkout:
 ```sh
 export REDMINE_BASE_URL="https://redmine.example.com"
 export REDMINE_API_KEY="your-api-key"
-npm start
+cargo run
 ```
 
 The server communicates over newline-delimited JSON-RPC on stdin/stdout. Logs
@@ -92,7 +92,7 @@ REDMINE_MCP_READ_ONLY = "true"
 | `REDMINE_MCP_ENABLE_DELETES` | No | `false` | Expose destructive delete/remove tools. |
 | `REDMINE_TIMEOUT_MS` | No | `30000` | HTTP request timeout in milliseconds. |
 
-Additional feature flags and complete client examples are documented in
+Complete environment variables and client examples are documented in
 [docs/client-configuration.md](docs/client-configuration.md).
 
 ## Development

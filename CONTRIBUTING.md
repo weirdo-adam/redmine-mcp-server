@@ -1,11 +1,10 @@
 # Contributing
 
-Thanks for contributing. Keep changes focused and include tests for behavior
-changes.
+Keep changes focused and include tests for behavior changes.
 
 ## Development Setup
 
-Install Node.js 18.17 or newer.
+Install Rust 1.75 or newer.
 
 Clone the repository and run checks from the repository root.
 
@@ -20,8 +19,9 @@ scripts/check.sh
 Individual commands:
 
 ```sh
-npm run lint:js
-npm test
+cargo fmt --check
+cargo clippy --all-targets -- -D warnings
+cargo test
 ```
 
 The MCP server speaks newline-delimited JSON-RPC over stdio. Keep stdout reserved
@@ -29,8 +29,8 @@ for protocol messages; write diagnostics to stderr.
 
 ## Release
 
-Update `package.json` and merge to `main`. The release workflow creates the
-version tag, publishes the source archive, and dispatches the Homebrew tap
+Update `Cargo.toml` and merge to `main`. The release workflow creates the
+version tag, publishes the release archive, and dispatches the Homebrew tap
 `Bottle` workflow.
 
 Configure the `HOMEBREW_TAP_TOKEN` repository secret before publishing a new
@@ -51,11 +51,11 @@ tap and Actions read/write permission.
 
 Before adding new tools, check `docs/api-coverage.md`.
 
-Read-only metadata tools are preferred for broadening coverage. Write tools must
-be listed in the `WRITE_TOOLS` set and must be rejected when
-`REDMINE_MCP_READ_ONLY=true`. Optional groups should have corresponding
-`REDMINE_MCP_DISABLE_*` flags when the group is plugin-dependent, high-volume, or
-not useful for every installation.
+Prefer read-only metadata tools when broadening coverage. Write tools must use
+`ToolAccess::Write` or `ToolAccess::Delete` in `src/tools/catalog/mod.rs` and
+must be rejected when `REDMINE_MCP_READ_ONLY=true`. Optional tool groups should
+have `REDMINE_MCP_DISABLE_*` flags when the group is plugin-dependent,
+high-volume, or not required for every installation.
 
 High-risk administrative APIs should start with a design discussion before
 implementation.
