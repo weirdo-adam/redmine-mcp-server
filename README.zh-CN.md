@@ -99,6 +99,7 @@ REDMINE_MCP_READ_ONLY = "true"
 ```sh
 scripts/check.sh
 scripts/package-release.sh
+scripts/package-binary.sh aarch64-apple-darwin macos aarch64
 ```
 
 源码发布包会写入 `dist/`：
@@ -106,6 +107,13 @@ scripts/package-release.sh
 ```text
 redmine-mcp-server-<version>.tar.gz
 redmine-mcp-server-<version>.tar.gz.sha256
+```
+
+二进制发布包使用 OS/CPU 命名：
+
+```text
+redmine-mcp-server-<version>-<os>-<arch>.tar.gz
+redmine-mcp-server-<version>-<os>-<arch>.tar.gz.sha256
 ```
 
 ## 安全

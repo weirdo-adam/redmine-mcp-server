@@ -14,18 +14,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
-    name: Release
+  metadata:
+    name: Release metadata
     runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      tag: ${{ steps.metadata.outputs.tag }}
+      archive_name: ${{ steps.metadata.outputs.archive_name }}
+      checksum_name: ${{ steps.metadata.outputs.checksum_name }}
+      source_url: ${{ steps.metadata.outputs.source_url }}
+      homebrew_release_tag: ${{ steps.metadata.outputs.homebrew_release_tag }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Setup Rust
-        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
 
       - name: Resolve release metadata
         id: metadata
@@ -42,75 +45,239 @@ jobs:
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
-          echo "archive=dist/$archive_name" >> "$GITHUB_OUTPUT"
-          echo "checksum=dist/$archive_name.sha256" >> "$GITHUB_OUTPUT"
+          echo "archive_name=$archive_name" >> "$GITHUB_OUTPUT"
+          echo "checksum_name=$archive_name.sha256" >> "$GITHUB_OUTPUT"
           echo "source_url=https://github.com/${GITHUB_REPOSITORY}/releases/download/v$version/$archive_name" >> "$GITHUB_OUTPUT"
           echo "homebrew_release_tag=redmine-mcp-server-$version" >> "$GITHUB_OUTPUT"
+
+  inspect:
+    name: Inspect release
+    runs-on: ubuntu-latest
+    needs: metadata
+
+    outputs:
+      tag_exists: ${{ steps.existing.outputs.tag_exists }}
+      release_exists: ${{ steps.existing.outputs.release_exists }}
+      release_is_draft: ${{ steps.existing.outputs.release_is_draft }}
+      source_complete: ${{ steps.existing.outputs.source_complete }}
+      binaries_complete: ${{ steps.existing.outputs.binaries_complete }}
+      publish_source: ${{ steps.existing.outputs.publish_source }}
+      skip: ${{ steps.existing.outputs.skip }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Inspect existing release
         id: existing
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.metadata.outputs.tag }}
+          TAG: ${{ needs.metadata.outputs.tag }}
+          VERSION: ${{ needs.metadata.outputs.version }}
+          SOURCE_ARCHIVE: ${{ needs.metadata.outputs.archive_name }}
+          SOURCE_CHECKSUM: ${{ needs.metadata.outputs.checksum_name }}
         run: |
           set -eu
 
           tag_exists=false
           release_exists=false
           release_is_draft=false
+          source_complete=false
+          binaries_complete=false
+          publish_source=true
           skip=false
+
+          expected_binary_assets="
+          redmine-mcp-server-$VERSION-linux-aarch64.tar.gz
+          redmine-mcp-server-$VERSION-linux-aarch64.tar.gz.sha256
+          redmine-mcp-server-$VERSION-linux-x86_64.tar.gz
+          redmine-mcp-server-$VERSION-linux-x86_64.tar.gz.sha256
+          redmine-mcp-server-$VERSION-macos-aarch64.tar.gz
+          redmine-mcp-server-$VERSION-macos-aarch64.tar.gz.sha256
+          redmine-mcp-server-$VERSION-macos-x86_64.tar.gz
+          redmine-mcp-server-$VERSION-macos-x86_64.tar.gz.sha256
+          redmine-mcp-server-$VERSION-windows-aarch64.tar.gz
+          redmine-mcp-server-$VERSION-windows-aarch64.tar.gz.sha256
+          redmine-mcp-server-$VERSION-windows-x86_64.tar.gz
+          redmine-mcp-server-$VERSION-windows-x86_64.tar.gz.sha256
+          "
 
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
             tag_exists=true
           fi
 
-          if draft=$(gh release view "$TAG" --json isDraft --jq '.isDraft' 2>/dev/null); then
+          assets_file=$(mktemp)
+          if gh release view "$TAG" --json isDraft,assets --jq '.isDraft, (.assets[].name)' > "$assets_file" 2>/dev/null; then
             release_exists=true
-            if [ "$draft" = "true" ]; then
+            if [ "$(sed -n '1p' "$assets_file")" = "true" ]; then
               release_is_draft=true
             fi
+
+            if grep -Fx "$SOURCE_ARCHIVE" "$assets_file" >/dev/null && grep -Fx "$SOURCE_CHECKSUM" "$assets_file" >/dev/null; then
+              source_complete=true
+              publish_source=false
+            fi
+
+            binaries_complete=true
+            for asset in $expected_binary_assets; do
+              if ! grep -Fx "$asset" "$assets_file" >/dev/null; then
+                binaries_complete=false
+              fi
+            done
           fi
 
-          if [ "$tag_exists" = "true" ] && [ "$release_exists" = "true" ] && [ "$release_is_draft" != "true" ]; then
+          if [ "$tag_exists" = "true" ] \
+            && [ "$release_exists" = "true" ] \
+            && [ "$release_is_draft" != "true" ] \
+            && [ "$source_complete" = "true" ] \
+            && [ "$binaries_complete" = "true" ]; then
             skip=true
-            echo "$TAG already has a remote tag and GitHub Release; skipping publish."
+            echo "$TAG already has a complete release; skipping publish."
           fi
 
           echo "tag_exists=$tag_exists" >> "$GITHUB_OUTPUT"
           echo "release_exists=$release_exists" >> "$GITHUB_OUTPUT"
           echo "release_is_draft=$release_is_draft" >> "$GITHUB_OUTPUT"
+          echo "source_complete=$source_complete" >> "$GITHUB_OUTPUT"
+          echo "binaries_complete=$binaries_complete" >> "$GITHUB_OUTPUT"
+          echo "publish_source=$publish_source" >> "$GITHUB_OUTPUT"
           echo "skip=$skip" >> "$GITHUB_OUTPUT"
 
-      - name: Validate Homebrew tap token
-        if: steps.existing.outputs.skip != 'true'
-        env:
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-        run: |
-          set -eu
+  source:
+    name: Source package
+    runs-on: ubuntu-latest
+    needs:
+      - metadata
+      - inspect
+    if: needs.inspect.outputs.skip != 'true' && needs.inspect.outputs.publish_source == 'true'
 
-          if [ -z "${HOMEBREW_TAP_TOKEN:-}" ]; then
-            echo "::error::HOMEBREW_TAP_TOKEN is required to update weirdo-adam/homebrew-tap after a release."
-            exit 1
-          fi
+    outputs:
+      source_sha256: ${{ steps.checksum.outputs.source_sha256 }}
 
-      - name: Build release package
-        if: steps.existing.outputs.skip != 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+
+      - name: Build source package
         run: scripts/package-release.sh
 
       - name: Resolve source checksum
         id: checksum
-        if: steps.existing.outputs.skip != 'true'
         env:
-          CHECKSUM: ${{ steps.metadata.outputs.checksum }}
+          CHECKSUM: dist/${{ needs.metadata.outputs.checksum_name }}
         run: |
           set -eu
-
           echo "source_sha256=$(awk '{print $1}' "$CHECKSUM")" >> "$GITHUB_OUTPUT"
 
+      - name: Upload source package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-package
+          path: |
+            dist/${{ needs.metadata.outputs.archive_name }}
+            dist/${{ needs.metadata.outputs.checksum_name }}
+          if-no-files-found: error
+
+  binaries:
+    name: Binary package (${{ matrix.os }}-${{ matrix.arch }})
+    needs:
+      - metadata
+      - inspect
+    if: needs.inspect.outputs.skip != 'true'
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            arch: aarch64
+            target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+          - os: linux
+            arch: x86_64
+            target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+          - os: macos
+            arch: aarch64
+            target: aarch64-apple-darwin
+            runner: macos-15
+          - os: macos
+            arch: x86_64
+            target: x86_64-apple-darwin
+            runner: macos-15-intel
+          - os: windows
+            arch: aarch64
+            target: aarch64-pc-windows-msvc
+            runner: windows-11-arm
+          - os: windows
+            arch: x86_64
+            target: x86_64-pc-windows-msvc
+            runner: windows-2025
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup target add ${{ matrix.target }}
+
+      - name: Build binary package
+        shell: bash
+        run: bash scripts/package-binary.sh "${{ matrix.target }}" "${{ matrix.os }}" "${{ matrix.arch }}"
+
+      - name: Upload binary package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            dist/redmine-mcp-server-${{ needs.metadata.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz
+            dist/redmine-mcp-server-${{ needs.metadata.outputs.version }}-${{ matrix.os }}-${{ matrix.arch }}.tar.gz.sha256
+          if-no-files-found: error
+
+  publish:
+    name: Publish release
+    runs-on: ubuntu-latest
+    needs:
+      - metadata
+      - inspect
+      - source
+      - binaries
+    if: always() && needs.inspect.outputs.skip != 'true' && needs.binaries.result == 'success' && (needs.source.result == 'success' || needs.source.result == 'skipped')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download binary package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          path: dist-binaries
+          merge-multiple: true
+
+      - name: Download source package artifact
+        if: needs.inspect.outputs.publish_source == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: source-package
+          path: dist-source
+
       - name: Create release tag
-        if: steps.existing.outputs.skip != 'true' && steps.existing.outputs.tag_exists != 'true'
+        if: needs.inspect.outputs.tag_exists != 'true'
         env:
-          TAG: ${{ steps.metadata.outputs.tag }}
+          TAG: ${{ needs.metadata.outputs.tag }}
         run: |
           set -eu
 
@@ -120,53 +287,61 @@ jobs:
           git push origin "$TAG"
 
       - name: Create GitHub Release
-        if: steps.existing.outputs.skip != 'true' && steps.existing.outputs.release_exists != 'true'
+        if: needs.inspect.outputs.release_exists != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.metadata.outputs.tag }}
-          ARCHIVE: ${{ steps.metadata.outputs.archive }}
-          CHECKSUM: ${{ steps.metadata.outputs.checksum }}
+          TAG: ${{ needs.metadata.outputs.tag }}
         run: |
           set -eu
 
-          gh release create "$TAG" "$ARCHIVE" "$CHECKSUM" \
+          gh release create "$TAG" dist-source/* dist-binaries/* \
             --title "$TAG" \
             --generate-notes \
             --verify-tag
 
-      - name: Update existing GitHub Release assets
-        if: steps.existing.outputs.skip != 'true' && steps.existing.outputs.release_exists == 'true'
+      - name: Upload source assets
+        if: needs.inspect.outputs.release_exists == 'true' && needs.inspect.outputs.publish_source == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.metadata.outputs.tag }}
-          ARCHIVE: ${{ steps.metadata.outputs.archive }}
-          CHECKSUM: ${{ steps.metadata.outputs.checksum }}
+          TAG: ${{ needs.metadata.outputs.tag }}
         run: |
           set -eu
+          gh release upload "$TAG" dist-source/* --clobber
 
-          gh release upload "$TAG" "$ARCHIVE" "$CHECKSUM" --clobber
+      - name: Upload binary assets
+        if: needs.inspect.outputs.release_exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.metadata.outputs.tag }}
+        run: |
+          set -eu
+          gh release upload "$TAG" dist-binaries/* --clobber
 
       - name: Publish draft GitHub Release
-        if: steps.existing.outputs.skip != 'true' && steps.existing.outputs.release_exists == 'true' && steps.existing.outputs.release_is_draft == 'true'
+        if: needs.inspect.outputs.release_exists == 'true' && needs.inspect.outputs.release_is_draft == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.metadata.outputs.tag }}
+          TAG: ${{ needs.metadata.outputs.tag }}
         run: |
           set -eu
-
           gh release edit "$TAG" --draft=false --latest --verify-tag
 
       - name: Dispatch Homebrew bottle workflow
-        if: steps.existing.outputs.skip != 'true'
+        if: needs.inspect.outputs.publish_source == 'true'
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           TAP_REPOSITORY: weirdo-adam/homebrew-tap
           FORMULA: redmine-mcp-server
-          RELEASE_TAG: ${{ steps.metadata.outputs.homebrew_release_tag }}
-          SOURCE_URL: ${{ steps.metadata.outputs.source_url }}
-          SOURCE_SHA256: ${{ steps.checksum.outputs.source_sha256 }}
+          RELEASE_TAG: ${{ needs.metadata.outputs.homebrew_release_tag }}
+          SOURCE_URL: ${{ needs.metadata.outputs.source_url }}
+          SOURCE_SHA256: ${{ needs.source.outputs.source_sha256 }}
         run: |
           set -eu
+
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::error::HOMEBREW_TAP_TOKEN is required to update weirdo-adam/homebrew-tap after a release."
+            exit 1
+          fi
 
           if ! gh workflow run Bottle \
               --repo "$TAP_REPOSITORY" \

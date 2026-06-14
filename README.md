@@ -100,6 +100,7 @@ Complete environment variables and client examples are documented in
 ```sh
 scripts/check.sh
 scripts/package-release.sh
+scripts/package-binary.sh aarch64-apple-darwin macos aarch64
 ```
 
 Source release archives are written to `dist/`:
@@ -107,6 +108,13 @@ Source release archives are written to `dist/`:
 ```text
 redmine-mcp-server-<version>.tar.gz
 redmine-mcp-server-<version>.tar.gz.sha256
+```
+
+Binary release archives use OS/CPU names:
+
+```text
+redmine-mcp-server-<version>-<os>-<arch>.tar.gz
+redmine-mcp-server-<version>-<os>-<arch>.tar.gz.sha256
 ```
 
 ## Security
