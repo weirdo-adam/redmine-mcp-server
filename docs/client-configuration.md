@@ -18,13 +18,13 @@ Most clients can use:
 redmine-mcp-server
 ```
 
-Apple Silicon Homebrew usually installs the executable at:
+Apple Silicon Homebrew installs the executable at:
 
 ```text
 /opt/homebrew/bin/redmine-mcp-server
 ```
 
-Intel macOS Homebrew usually installs it at:
+Intel macOS Homebrew installs the executable at:
 
 ```text
 /usr/local/bin/redmine-mcp-server
