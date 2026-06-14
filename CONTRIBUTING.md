@@ -35,8 +35,8 @@ version tag, publishes the source archive, and dispatches the Homebrew tap
 
 Configure the `HOMEBREW_TAP_TOKEN` repository secret before publishing a new
 version. The token must be able to dispatch workflows in
-`weirdo-adam/homebrew-tap`; fine-grained tokens also need contents write access
-for that repository.
+`weirdo-adam/homebrew-tap`. Fine-grained tokens need repository access to that
+tap and Actions read/write permission.
 
 ## Pull Requests
 

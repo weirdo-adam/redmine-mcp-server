@@ -170,10 +170,13 @@ jobs:
         run: |
           set -eu
 
-          gh workflow run Bottle \
-            --repo "$TAP_REPOSITORY" \
-            --ref main \
-            -f formula="$FORMULA" \
-            -f release_tag="$RELEASE_TAG" \
-            -f source_url="$SOURCE_URL" \
-            -f source_sha256="$SOURCE_SHA256"
+          if ! gh workflow run Bottle \
+              --repo "$TAP_REPOSITORY" \
+              --ref main \
+              -f formula="$FORMULA" \
+              -f release_tag="$RELEASE_TAG" \
+              -f source_url="$SOURCE_URL" \
+              -f source_sha256="$SOURCE_SHA256"; then
+            echo "::error::Failed to dispatch the Homebrew tap workflow. Ensure HOMEBREW_TAP_TOKEN has Actions read/write access to $TAP_REPOSITORY."
+            exit 1
+          fi
