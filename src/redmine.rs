@@ -116,9 +116,11 @@ pub struct RedmineClient {
 
 impl RedmineClient {
     pub fn new(config: Config) -> Self {
-        let agent = ureq::AgentBuilder::new()
-            .timeout(Duration::from_millis(config.timeout_ms))
-            .build();
+        let agent = ureq::Agent::config_builder()
+            .http_status_as_error(false)
+            .timeout_global(Some(Duration::from_millis(config.timeout_ms)))
+            .build()
+            .into();
         Self { config, agent }
     }
 
@@ -131,34 +133,49 @@ impl RedmineClient {
         self.assert_configured()?;
 
         let url = build_url(&self.config.base_url, path, &options.query)?;
-        let mut request = self
-            .agent
-            .request(method, &url)
-            .set("X-Redmine-API-Key", &self.config.api_key)
-            .set(
+        let request = ureq::http::Request::builder()
+            .method(method)
+            .uri(&url)
+            .header("X-Redmine-API-Key", self.config.api_key.as_str())
+            .header(
                 "Accept",
                 options.accept.as_deref().unwrap_or("application/json"),
             );
 
         let result = if let Some(raw_body) = options.raw_body.as_ref() {
-            request = request.set(
-                "Content-Type",
-                options
-                    .content_type
-                    .as_deref()
-                    .unwrap_or("application/octet-stream"),
-            );
-            request.send_bytes(raw_body)
+            let request = request
+                .header(
+                    "Content-Type",
+                    options
+                        .content_type
+                        .as_deref()
+                        .unwrap_or("application/octet-stream"),
+                )
+                .body(raw_body.as_slice())
+                .map_err(|error| {
+                    RedmineError::request(format!("Invalid Redmine request: {error}"), method, path)
+                })?;
+            self.agent.run(request)
         } else if let Some(body) = options.body.as_ref() {
-            request = request.set("Content-Type", "application/json");
-            request.send_string(&body.to_string())
+            let request = request
+                .header("Content-Type", "application/json")
+                .body(body.to_string())
+                .map_err(|error| {
+                    RedmineError::request(format!("Invalid Redmine request: {error}"), method, path)
+                })?;
+            self.agent.run(request)
         } else {
-            request.call()
+            let request = request.body(()).map_err(|error| {
+                RedmineError::request(format!("Invalid Redmine request: {error}"), method, path)
+            })?;
+            self.agent.run(request)
         };
 
         match result {
-            Ok(response) => parse_response(method, path, response, options.response_type),
-            Err(ureq::Error::Status(status, response)) => {
+            Ok(response)
+                if response.status().is_client_error() || response.status().is_server_error() =>
+            {
+                let status = response.status().as_u16();
                 let parsed = parse_response(method, path, response, ResponseType::Json)
                     .map(|response| response.body.as_value())
                     .unwrap_or_else(|_| Value::Null);
@@ -170,6 +187,7 @@ impl RedmineClient {
                     parsed,
                 ))
             }
+            Ok(response) => parse_response(method, path, response, options.response_type),
             Err(error) => Err(RedmineError::request(
                 format!("Redmine request failed: {error}"),
                 method,
@@ -238,12 +256,16 @@ pub fn value_to_string(value: &Value) -> String {
 fn parse_response(
     method: &str,
     path: &str,
-    response: ureq::Response,
+    response: ureq::http::Response<ureq::Body>,
     response_type: ResponseType,
 ) -> Result<RedmineResponse, RedmineError> {
-    let status = response.status();
+    let status = response.status().as_u16();
     let mut headers = HashMap::new();
-    if let Some(content_type) = response.header("content-type") {
+    if let Some(content_type) = response
+        .headers()
+        .get("content-type")
+        .and_then(|value| value.to_str().ok())
+    {
         headers.insert("content-type".to_string(), content_type.to_string());
     }
 
@@ -257,8 +279,8 @@ fn parse_response(
 
     if response_type == ResponseType::Buffer {
         let mut bytes = Vec::new();
-        response
-            .into_reader()
+        let (_, body) = response.into_parts();
+        body.into_reader()
             .read_to_end(&mut bytes)
             .map_err(|error| {
                 RedmineError::request(
@@ -274,13 +296,17 @@ fn parse_response(
         });
     }
 
-    let text = response.into_string().map_err(|error| {
-        RedmineError::request(
-            format!("Redmine response read failed: {error}"),
-            method,
-            path,
-        )
-    })?;
+    let (_, body) = response.into_parts();
+    let mut text = String::new();
+    body.into_reader()
+        .read_to_string(&mut text)
+        .map_err(|error| {
+            RedmineError::request(
+                format!("Redmine response read failed: {error}"),
+                method,
+                path,
+            )
+        })?;
     let body = if text.is_empty() {
         Value::Null
     } else {
