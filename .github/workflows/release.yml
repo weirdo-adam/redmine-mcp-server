@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Rust
-        run: rustup toolchain install stable --profile minimal
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
 
       - name: Resolve release metadata
         id: metadata

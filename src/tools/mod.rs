@@ -1074,16 +1074,16 @@ fn target_from(value: &Value) -> Value {
 }
 
 fn attachment_max_bytes(client: &RedmineClient, args: &Map<String, Value>) -> u64 {
+    let configured_limit = if client.config.attachment_max_bytes > 0 {
+        client.config.attachment_max_bytes
+    } else {
+        DEFAULT_ATTACHMENT_MAX_BYTES
+    };
+
     args.get("max_bytes")
         .and_then(Value::as_u64)
         .filter(|value| *value > 0)
-        .unwrap_or_else(|| {
-            if client.config.attachment_max_bytes > 0 {
-                client.config.attachment_max_bytes
-            } else {
-                DEFAULT_ATTACHMENT_MAX_BYTES
-            }
-        })
+        .unwrap_or(configured_limit)
 }
 
 fn attachment_filename(args: &Map<String, Value>) -> Result<String, RedmineError> {
