@@ -8,7 +8,6 @@ PACKAGE_NAME="redmine-mcp-server-${VERSION}"
 DIST_DIR="$REPO_ROOT/dist"
 STAGE_DIR="$DIST_DIR/$PACKAGE_NAME"
 ARCHIVE="$DIST_DIR/$PACKAGE_NAME.tar.gz"
-BINARY="$REPO_ROOT/target/release/redmine-mcp-server"
 
 if [ -z "$VERSION" ]; then
   echo "Unable to read version from Cargo.toml" >&2
@@ -18,24 +17,22 @@ fi
 cd "$REPO_ROOT"
 
 scripts/check.sh
-cargo build --release
 
 mkdir -p "$DIST_DIR"
 rm -rf "$STAGE_DIR" "$ARCHIVE" "$ARCHIVE.sha256"
-mkdir -p "$STAGE_DIR/docs" "$STAGE_DIR/scripts" "$STAGE_DIR/bin"
+mkdir -p "$STAGE_DIR"
 
 cp "$REPO_ROOT/Cargo.toml" "$STAGE_DIR/Cargo.toml"
+cp "$REPO_ROOT/Cargo.lock" "$STAGE_DIR/Cargo.lock"
 cp "$REPO_ROOT/README.md" "$STAGE_DIR/README.md"
 cp "$REPO_ROOT/README.zh-CN.md" "$STAGE_DIR/README.zh-CN.md"
 cp "$REPO_ROOT/LICENSE" "$STAGE_DIR/LICENSE"
 cp "$REPO_ROOT/SECURITY.md" "$STAGE_DIR/SECURITY.md"
 cp "$REPO_ROOT/CONTRIBUTING.md" "$STAGE_DIR/CONTRIBUTING.md"
-cp "$REPO_ROOT/docs/"*.md "$STAGE_DIR/docs/"
-cp "$REPO_ROOT/scripts/install-local.sh" "$STAGE_DIR/scripts/install-local.sh"
-cp "$BINARY" "$STAGE_DIR/bin/redmine-mcp-server"
-
-chmod +x "$STAGE_DIR/bin/redmine-mcp-server" \
-  "$STAGE_DIR/scripts/install-local.sh"
+cp -R "$REPO_ROOT/docs" "$STAGE_DIR/docs"
+cp -R "$REPO_ROOT/scripts" "$STAGE_DIR/scripts"
+cp -R "$REPO_ROOT/src" "$STAGE_DIR/src"
+cp -R "$REPO_ROOT/tests" "$STAGE_DIR/tests"
 
 tar -C "$DIST_DIR" -czf "$ARCHIVE" "$PACKAGE_NAME"
 shasum -a 256 "$ARCHIVE" > "$ARCHIVE.sha256"

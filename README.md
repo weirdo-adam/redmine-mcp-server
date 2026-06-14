@@ -102,7 +102,7 @@ scripts/check.sh
 scripts/package-release.sh
 ```
 
-Release archives are written to `dist/`:
+Source release archives are written to `dist/`:
 
 ```text
 redmine-mcp-server-<version>.tar.gz
