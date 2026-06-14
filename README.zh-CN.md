@@ -101,7 +101,7 @@ scripts/check.sh
 scripts/package-release.sh
 ```
 
-发布包会写入 `dist/`：
+源码发布包会写入 `dist/`：
 
 ```text
 redmine-mcp-server-<version>.tar.gz
