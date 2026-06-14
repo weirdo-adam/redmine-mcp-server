@@ -177,7 +177,7 @@ jobs:
           echo "source_sha256=$(awk '{print $1}' "$CHECKSUM")" >> "$GITHUB_OUTPUT"
 
       - name: Upload source package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: source-package
           path: |
@@ -236,7 +236,7 @@ jobs:
         run: bash scripts/package-binary.sh "${{ matrix.target }}" "${{ matrix.os }}" "${{ matrix.arch }}"
 
       - name: Upload binary package artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: binary-${{ matrix.os }}-${{ matrix.arch }}
           path: |
@@ -261,7 +261,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download binary package artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: binary-*
           path: dist-binaries
@@ -269,7 +269,7 @@ jobs:
 
       - name: Download source package artifact
         if: needs.inspect.outputs.publish_source == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: source-package
           path: dist-source
