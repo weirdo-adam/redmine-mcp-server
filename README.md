@@ -1,9 +1,36 @@
 # Redmine MCP Server
 
-Standalone stdio Model Context Protocol server for Redmine.
+[![CI](https://github.com/weirdo-adam/redmine-mcp-server/actions/workflows/ci.yml/badge.svg)](https://github.com/weirdo-adam/redmine-mcp-server/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Homebrew](https://img.shields.io/badge/Homebrew-weirdo--adam%2Ftap-orange.svg)](https://github.com/weirdo-adam/homebrew-tap)
 
-It provides MCP tools for Redmine issues, projects, metadata, wiki pages, time
-entries, attachments, versions, relations, watchers, and Redmine Checklists.
+Connect Redmine to MCP clients such as Claude Code, Claude Desktop, Codex, and
+Zed. The server lets AI agents search, summarize, triage, and update Redmine
+work while keeping access scoped to a normal Redmine API key.
+
+[简体中文](README.zh-CN.md)
+
+## What You Can Ask
+
+Once configured, an MCP client can answer Redmine-aware requests such as:
+
+- "Summarize issue #1234, including the latest comments and current blockers."
+- "List my open high-priority issues in project `mobile-app`."
+- "Find stale critical issues that have not been updated in the last 7 days."
+- "Add this investigation result as a comment on issue #1234."
+- "Show unreleased versions for this project and the open issues under each."
+- "Create a 2-hour time entry for the deployment work I just finished."
+
+## Features
+
+- Issue search, read, create, update, and optional delete tools.
+- Project, membership, tracker, status, priority, custom field, query, and user
+  lookup tools.
+- Wiki pages, time entries, attachments, versions, issue relations, watchers,
+  and Redmine Checklists support.
+- Read-only mode for analysis-only agents.
+- Destructive delete/remove tools disabled by default.
+- Standalone stdio transport with no web service or database access layer.
 
 ## Requirements
 
@@ -12,7 +39,7 @@ entries, attachments, versions, relations, watchers, and Redmine Checklists.
 - Redmine API key with the required project permissions
 - Redmine Checklists plugin, only when checklist tools are used
 
-## Installation
+## Quick Start
 
 Homebrew:
 
@@ -26,7 +53,7 @@ Local checkout:
 scripts/install-local.sh
 ```
 
-## Usage
+Run the server:
 
 ```sh
 export REDMINE_BASE_URL="https://redmine.example.com"
@@ -95,6 +122,19 @@ REDMINE_MCP_READ_ONLY = "true"
 Complete environment variables and client examples are documented in
 [docs/client-configuration.md](docs/client-configuration.md).
 
+## Documentation
+
+- [Client configuration](docs/client-configuration.md): Homebrew paths, local
+  checkout setup, Claude Code, Claude Desktop, Codex, Zed, and generic stdio
+  clients.
+- [Prompt cookbook](docs/prompt-cookbook.md): copyable prompts for issue triage,
+  release planning, time tracking, wiki lookup, and safe write workflows.
+- [API coverage](docs/api-coverage.md): supported Redmine API areas, feature
+  flags, and current scope rules.
+- [Promotion drafts](docs/promotion-post.md): launch copy, short posts, suggested
+  GitHub topics, and release checklist.
+- [Changelog](CHANGELOG.md): release notes and notable project changes.
+
 ## Development
 
 ```sh
@@ -119,8 +159,12 @@ redmine-mcp-server-<version>-<os>-<arch>.tar.gz.sha256
 
 ## Security
 
-Permissions are determined by the configured Redmine API key. Use the least
-privileged key practical for the target project, and enable
-`REDMINE_MCP_READ_ONLY=true` when write operations are not required.
+The server does not need direct database access and does not store your API key.
+Permissions are determined by the configured Redmine API key.
+
+Use the least privileged key practical for the target project, and enable
+`REDMINE_MCP_READ_ONLY=true` when write operations are not required. Destructive
+delete/remove tools are hidden unless `REDMINE_MCP_ENABLE_DELETES=true` is set,
+and they are still blocked by read-only mode.
 
 See [SECURITY.md](SECURITY.md) for vulnerability reporting.

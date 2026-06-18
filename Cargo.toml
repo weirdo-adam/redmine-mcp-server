@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "Standalone stdio MCP server for Redmine."
+repository = "https://github.com/weirdo-adam/redmine-mcp-server"
+homepage = "https://github.com/weirdo-adam/redmine-mcp-server"
+readme = "README.md"
+keywords = ["redmine", "mcp", "claude", "codex", "issue-tracker"]
+categories = ["command-line-utilities", "api-bindings"]
 
 [[bin]]
 name = "redmine-mcp-server"
