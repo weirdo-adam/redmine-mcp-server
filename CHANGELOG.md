@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 ## Unreleased
 
+## 0.1.1
+
+- Added time entry activity-name resolution so time entry creation can look up
+  Redmine custom activities when `activity_id` is not provided.
+- Fixed time entry creation to include additional `fields` in the Redmine
+  request body.
 - Improved README positioning, examples, documentation links, and security
   messaging for new users.
 - Added a prompt cookbook with copyable Redmine MCP workflows.
