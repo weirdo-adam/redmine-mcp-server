@@ -61,6 +61,7 @@ jobs:
       release_is_draft: ${{ steps.existing.outputs.release_is_draft }}
       source_complete: ${{ steps.existing.outputs.source_complete }}
       binaries_complete: ${{ steps.existing.outputs.binaries_complete }}
+      installers_complete: ${{ steps.existing.outputs.installers_complete }}
       publish_source: ${{ steps.existing.outputs.publish_source }}
       skip: ${{ steps.existing.outputs.skip }}
 
@@ -86,6 +87,7 @@ jobs:
           release_is_draft=false
           source_complete=false
           binaries_complete=false
+          installers_complete=false
           publish_source=true
           skip=false
 
@@ -102,6 +104,11 @@ jobs:
           redmine-mcp-server-$VERSION-windows-aarch64.tar.gz.sha256
           redmine-mcp-server-$VERSION-windows-x86_64.tar.gz
           redmine-mcp-server-$VERSION-windows-x86_64.tar.gz.sha256
+          "
+          expected_installer_assets="
+          install.sh
+          install.ps1
+          install.cmd
           "
 
           if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
@@ -126,13 +133,21 @@ jobs:
                 binaries_complete=false
               fi
             done
+
+            installers_complete=true
+            for asset in $expected_installer_assets; do
+              if ! grep -Fx "$asset" "$assets_file" >/dev/null; then
+                installers_complete=false
+              fi
+            done
           fi
 
           if [ "$tag_exists" = "true" ] \
             && [ "$release_exists" = "true" ] \
             && [ "$release_is_draft" != "true" ] \
             && [ "$source_complete" = "true" ] \
-            && [ "$binaries_complete" = "true" ]; then
+            && [ "$binaries_complete" = "true" ] \
+            && [ "$installers_complete" = "true" ]; then
             skip=true
             echo "$TAG already has a complete release; skipping publish."
           fi
@@ -142,6 +157,7 @@ jobs:
           echo "release_is_draft=$release_is_draft" >> "$GITHUB_OUTPUT"
           echo "source_complete=$source_complete" >> "$GITHUB_OUTPUT"
           echo "binaries_complete=$binaries_complete" >> "$GITHUB_OUTPUT"
+          echo "installers_complete=$installers_complete" >> "$GITHUB_OUTPUT"
           echo "publish_source=$publish_source" >> "$GITHUB_OUTPUT"
           echo "skip=$skip" >> "$GITHUB_OUTPUT"
 
@@ -294,7 +310,7 @@ jobs:
         run: |
           set -eu
 
-          gh release create "$TAG" dist-source/* dist-binaries/* \
+          gh release create "$TAG" dist-source/* dist-binaries/* scripts/install.sh scripts/install.ps1 scripts/install.cmd \
             --title "$TAG" \
             --generate-notes \
             --verify-tag
@@ -316,6 +332,15 @@ jobs:
         run: |
           set -eu
           gh release upload "$TAG" dist-binaries/* --clobber
+
+      - name: Upload installer assets
+        if: needs.inspect.outputs.release_exists == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.metadata.outputs.tag }}
+        run: |
+          set -eu
+          gh release upload "$TAG" scripts/install.sh scripts/install.ps1 scripts/install.cmd --clobber
 
       - name: Publish draft GitHub Release
         if: needs.inspect.outputs.release_exists == 'true' && needs.inspect.outputs.release_is_draft == 'true'

@@ -4,6 +4,45 @@ Use absolute commands when configuring GUI clients. Keep real API keys in
 user-scoped client settings or environment variables, not in committed project
 files.
 
+## Native Install (Recommended)
+
+Install the latest native binary release:
+
+macOS/Linux:
+
+```sh
+curl -fsSL https://github.com/weirdo-adam/redmine-mcp-server/releases/latest/download/install.sh | bash
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://github.com/weirdo-adam/redmine-mcp-server/releases/latest/download/install.ps1 | iex
+```
+
+Windows Command Prompt:
+
+```cmd
+curl -fsSL https://github.com/weirdo-adam/redmine-mcp-server/releases/latest/download/install.cmd -o install.cmd && install.cmd && del install.cmd
+```
+
+The installer downloads the matching GitHub Release archive, verifies the
+`.sha256` checksum, and installs `redmine-mcp-server`.
+
+Default install locations:
+
+```text
+macOS/Linux: ~/.local/bin/redmine-mcp-server
+Windows:     %LOCALAPPDATA%\redmine-mcp-server\bin\redmine-mcp-server.exe
+```
+
+Override the install directory with `REDMINE_MCP_INSTALL_DIR`. Install a
+specific release with `REDMINE_MCP_VERSION`, for example:
+
+```sh
+curl -fsSL https://github.com/weirdo-adam/redmine-mcp-server/releases/latest/download/install.sh | REDMINE_MCP_VERSION=0.1.1 bash
+```
+
 ## Homebrew
 
 After installing with Homebrew:

@@ -41,6 +41,26 @@ Once configured, an MCP client can answer Redmine-aware requests such as:
 
 ## Quick Start
 
+Native Install (Recommended):
+
+macOS/Linux:
+
+```sh
+curl -fsSL https://github.com/weirdo-adam/redmine-mcp-server/releases/latest/download/install.sh | bash
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://github.com/weirdo-adam/redmine-mcp-server/releases/latest/download/install.ps1 | iex
+```
+
+Windows Command Prompt:
+
+```cmd
+curl -fsSL https://github.com/weirdo-adam/redmine-mcp-server/releases/latest/download/install.cmd -o install.cmd && install.cmd && del install.cmd
+```
+
 Homebrew:
 
 ```sh
