@@ -242,12 +242,16 @@ pub(super) fn list_time_entries_schema() -> Value {
 
 pub(super) fn add_time_entry_schema() -> Value {
     schema(
-        ["hours", "activity_id"],
+        ["hours"],
         [
             integer("issue_id", "Issue ID."),
             id_or_string("project_id", "Project ID or identifier."),
             number("hours", "Spent hours."),
             integer("activity_id", "Activity ID."),
+            string_prop(
+                "activity_name",
+                "Activity name to resolve when activity_id is not provided.",
+            ),
             string_prop("spent_on", "Spent date in YYYY-MM-DD format."),
             string_prop("comments", "Time entry comments."),
             object_prop("fields", "Additional Redmine time entry fields."),
